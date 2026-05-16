@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — ResumeAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:#070b14; --bg2:#0d1422; --surface:#111827; --surface2:#1a2235;
+            --border:#1e2d45; --border2:#243350;
+            --gold:#c9a84c; --gold2:#e8c870; --gold-dim:rgba(201,168,76,0.1);
+            --cyan:#38bdf8; --text:#e8edf5; --text2:#94a3b8;
+            --success:#34d399; --danger:#f87171; --warning:#fbbf24;
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+        body::before {
+            content:''; position:fixed; inset:0;
+            background-image: linear-gradient(rgba(201,168,76,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(201,168,76,0.025) 1px, transparent 1px);
+            background-size:60px 60px; pointer-events:none; z-index:0;
+        }
+
+        /* NAV */
+        nav {
+            position:sticky; top:0; z-index:100;
+            height:64px; padding:0 40px;
+            display:flex; align-items:center; justify-content:space-between;
+            background:rgba(7,11,20,0.9); backdrop-filter:blur(24px);
+            border-bottom:1px solid var(--border);
+        }
+        .logo { font-family:'Playfair Display',serif; font-size:1.25rem; font-weight:700; display:flex; align-items:center; gap:10px; }
+        .logo-mark { width:30px; height:30px; background:linear-gradient(135deg,var(--gold),var(--gold2)); border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:0.8rem; color:#070b14; font-weight:900; }
+        .nav-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .nav-btn { background:var(--surface2); border:1px solid var(--border2); color:var(--text2); padding:7px 16px; border-radius:9px; font-family:'DM Sans',sans-serif; font-size:0.8rem; font-weight:500; cursor:pointer; transition:all .2s; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+        .nav-btn:hover { border-color:var(--gold); color:var(--gold); }
+        .nav-btn-gold { background:linear-gradient(135deg,var(--gold),var(--gold2)); color:#070b14; border:none; font-weight:700; }
+        .nav-btn-gold:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(201,168,76,0.3); color:#070b14; border:none; }
+
+        /* TABS */
+        .tabs-bar {
+            position:sticky; top:64px; z-index:90;
+            background:rgba(7,11,20,0.95); backdrop-filter:blur(20px);
+            border-bottom:1px solid var(--border);
+            display:flex; padding:0 40px; overflow-x:auto; gap:0;
+        }
+        .tab-btn {
+            padding:15px 22px; background:none; border:none; border-bottom:2px solid transparent;
+            color:var(--text2); font-family:'DM Sans',sans-serif; font-size:0.83rem; font-weight:500;
+            cursor:pointer; transition:all .2s; white-space:nowrap; display:flex; align-items:center; gap:8px;
+        }
+        .tab-btn:hover { color:var(--text); }
+        .tab-btn.active { color:var(--gold); border-bottom-color:var(--gold); }
+        .tab-count { background:var(--surface2); border:1px solid var(--border); padding:2px 7px; border-radius:8px; font-size:0.7rem; }
+
+        /* PANELS */
+        .tab-panel { display:none; }
+        .tab-panel.active { display:block; }
+
+        /* PAGE */
+        .page { position:relative; z-index:1; max-width:1360px; margin:0 auto; padding:32px 40px; }
+
+        /* CARDS */
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:26px; margin-bottom:18px; }
+        .card-top { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+        .card-ico { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; }
+        .card-ttl { font-size:0.97rem; font-weight:600; }
+        .card-badge { margin-left:auto; background:var(--surface2); border:1px solid var(--border); padding:3px 11px; border-radius:8px; font-size:0.72rem; color:var(--text2); }
+
+        /* OVERVIEW GRID */
+        .overview-grid { display:grid; grid-template-columns:260px 1fr; gap:20px; }
+
+        /* SCORE */
+        .score-card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:26px 20px; text-align:center; position:relative; overflow:hidden; }
+        .score-card::after { content:''; position:absolute; top:0;left:0;right:0; height:2px; background:linear-gradient(90deg, transparent, var(--gold), transparent); }
+        .score-lbl { font-size:0.68rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--text2); margin-bottom:18px; }
+        .score-ring-wrap { position:relative; width:140px; height:140px; margin:0 auto 16px; }
+        .score-ring-svg { transform:rotate(-90deg); width:140px; height:140px; }
+        .ring-bg { fill:none; stroke:var(--border2); stroke-width:9; }
+        .ring-fill { fill:none; stroke-width:9; stroke-linecap:round; stroke-dasharray:376; stroke-dashoffset:376; transition:stroke-dashoffset 1.6s cubic-bezier(.4,0,.2,1); }
+        .score-inner { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        .score-n { font-family:'Playfair Display',serif; font-size:2.6rem; font-weight:700; line-height:1; }
+        .score-d { font-size:0.75rem; color:var(--text2); }
+        .score-grade { font-size:0.95rem; font-weight:600; margin-bottom:5px; }
+        .score-desc { font-size:0.75rem; color:var(--text2); line-height:1.5; }
+
+        /* BREAKDOWN */
+        .breakdown-card { background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:22px; margin-top:18px; }
+        .bdwn-lbl { font-size:0.68rem; font-weight:600; letter-spacing:.14em; text-transform:uppercase; color:var(--text2); margin-bottom:18px; }
+        .bdwn-item { margin-bottom:13px; }
+        .bdwn-row { display:flex; justify-content:space-between; margin-bottom:6px; font-size:0.8rem; }
+        .pbar { height:5px; background:var(--border2); border-radius:3px; overflow:hidden; }
+        .pfill { height:100%; border-radius:3px; width:0; transition:width 1s ease .6s; }
+
+        /* STATS ROW */
+        .stats-row { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:18px; }
+        .mini-stat { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; text-align:center; }
+        .mini-num { font-family:'Playfair Display',serif; font-size:1.8rem; font-weight:700; line-height:1; }
+        .mini-lbl { font-size:0.72rem; color:var(--text2); margin-top:5px; }
+
+        /* SKILLS */
+        .skill-tags { display:flex; flex-wrap:wrap; gap:8px; }
+        .stag { background:rgba(201,168,76,0.08); border:1px solid rgba(201,168,76,0.2); color:var(--gold2); padding:6px 15px; border-radius:20px; font-size:0.82rem; font-weight:500; transition:all .2s; cursor:default; }
+        .stag:hover { background:rgba(201,168,76,0.15); transform:translateY(-2px); }
+
+        /* SECTIONS */
+        .sec-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+        .sec-item { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; }
+        .sec-item.found { border-color:rgba(52,211,153,0.25); background:rgba(52,211,153,0.04); }
+        .sec-item.missing { border-color:rgba(248,113,113,0.2); background:rgba(248,113,113,0.03); }
+        .sec-ico { font-size:1.3rem; margin-bottom:6px; }
+        .sec-nm { font-size:0.82rem; font-weight:500; margin-bottom:4px; }
+        .sec-st { font-size:0.7rem; font-weight:600; }
+        .sec-item.found .sec-st { color:var(--success); }
+        .sec-item.missing .sec-st { color:var(--danger); }
+
+        /* GRAMMAR */
+        .gram-item { background:var(--surface2); border:1px solid var(--border); border-left:3px solid var(--warning); border-radius:12px; padding:15px 18px; margin-bottom:10px; }
+        .gram-err { font-size:0.85rem; color:var(--danger); font-family:monospace; background:rgba(248,113,113,0.07); padding:3px 9px; border-radius:5px; display:inline-block; }
+        .gram-fix { font-size:0.85rem; color:var(--success); font-family:monospace; background:rgba(52,211,153,0.07); padding:3px 9px; border-radius:5px; display:inline-block; margin-top:5px; }
+        .gram-rule { font-size:0.7rem; color:var(--text2); margin-top:8px; }
+        .no-issues { display:flex; align-items:center; gap:12px; background:rgba(52,211,153,0.06); border:1px solid rgba(52,211,153,0.18); border-radius:12px; padding:18px; color:var(--success); }
+
+        /* JOB MATCH */
+        .jd-area { width:100%; background:var(--surface2); border:1px solid var(--border2); border-radius:12px; padding:14px 16px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:0.85rem; resize:vertical; min-height:130px; line-height:1.6; outline:none; transition:border-color .2s; }
+        .jd-area:focus { border-color:var(--gold); }
+        .jd-area::placeholder { color:var(--text2); }
+        .btn-gold-sm { background:linear-gradient(135deg,var(--gold),var(--gold2)); color:#070b14; border:none; padding:12px 26px; border-radius:10px; font-family:'DM Sans',sans-serif; font-size:0.88rem; font-weight:700; cursor:pointer; margin-top:12px; transition:all .3s; display:inline-block; }
+        .btn-gold-sm:hover { transform:translateY(-2px); box-shadow:0 10px 22px rgba(201,168,76,0.3); }
+        .btn-gold-sm:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+        .match-result { display:none; margin-top:20px; padding:22px; background:var(--surface2); border:1px solid var(--border2); border-radius:14px; }
+        .match-result.show { display:block; }
+        .match-big { font-family:'Playfair Display',serif; font-size:3rem; font-weight:700; text-align:center; margin-bottom:6px; }
+        .match-lbl { text-align:center; color:var(--text2); font-size:0.85rem; margin-bottom:18px; }
+        .mbar-wrap { height:7px; background:var(--border2); border-radius:4px; margin-bottom:18px; overflow:hidden; }
+        .mbar { height:100%; border-radius:4px; transition:width 1.2s cubic-bezier(.4,0,.2,1); width:0; }
+        .mkw-title { font-size:0.7rem; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--text2); margin-bottom:10px; }
+        .mkw-wrap { display:flex; flex-wrap:wrap; gap:7px; }
+        .mkw { background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.2); color:#fca5a5; padding:4px 12px; border-radius:10px; font-size:0.76rem; }
+
+        /* INTERVIEW */
+        .iq-filters { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+        .flt-btn { background:var(--surface2); border:1px solid var(--border); color:var(--text2); padding:6px 15px; border-radius:20px; font-family:'DM Sans',sans-serif; font-size:0.78rem; font-weight:500; cursor:pointer; transition:all .2s; }
+        .flt-btn:hover, .flt-btn.active { background:var(--gold-dim); border-color:rgba(201,168,76,0.35); color:var(--gold); }
+        .iq-list { display:flex; flex-direction:column; gap:12px; }
+        .iq-card { background:var(--surface2); border:1px solid var(--border); border-radius:14px; padding:18px 20px; cursor:pointer; transition:all .2s; }
+        .iq-card:hover { border-color:var(--border2); }
+        .iq-card.open { border-color:rgba(201,168,76,0.3); background:rgba(201,168,76,0.04); }
+        .iq-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+        .iq-q { font-size:0.9rem; font-weight:500; line-height:1.5; flex:1; }
+        .iq-arr { color:var(--text2); font-size:0.75rem; white-space:nowrap; flex-shrink:0; margin-top:2px; transition:transform .2s; }
+        .iq-card.open .iq-arr { transform:rotate(180deg); }
+        .iq-meta { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+        .iq-cat { background:rgba(56,189,248,0.1); border:1px solid rgba(56,189,248,0.2); color:var(--cyan); padding:3px 10px; border-radius:8px; font-size:0.7rem; }
+        .iq-diff { padding:3px 10px; border-radius:8px; font-size:0.7rem; font-weight:600; }
+        .iq-diff.Easy { background:rgba(52,211,153,0.1); color:var(--success); }
+        .iq-diff.Medium { background:rgba(251,191,36,0.1); color:var(--warning); }
+        .iq-diff.Hard { background:rgba(248,113,113,0.1); color:var(--danger); }
+        .iq-tip { display:none; margin-top:14px; padding:13px 16px; background:rgba(56,189,248,0.06); border:1px solid rgba(56,189,248,0.15); border-radius:10px; font-size:0.83rem; color:var(--cyan); line-height:1.6; }
+        .iq-tip.show { display:block; }
+        .iq-tip::before { content:'💡 Tip: '; font-weight:700; }
+
+        /* SUGGESTIONS */
+        .sug-item { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; border-radius:12px; border:1px solid var(--border); background:var(--surface2); margin-bottom:10px; transition:all .2s; }
+        .sug-item:hover { border-color:var(--border2); transform:translateX(4px); }
+        .sug-txt { font-size:0.87rem; line-height:1.5; }
+
+        @media(max-width:1024px) { .overview-grid{grid-template-columns:1fr} .sec-grid{grid-template-columns:repeat(4,1fr)} }
+        @media(max-width:640px) { nav{padding:0 16px} .page{padding:20px 16px} .tabs-bar{padding:0 16px} .sec-grid{grid-template-columns:repeat(2,1fr)} .stats-row{grid-template-columns:1fr 1fr} }
+    </style>
+</head>
+<body>
+<nav>
+    <div class="logo"><div class="logo-mark">R</div>ResumeAI</div>
+    <div class="nav-actions">
+        <a href="/build-resume" class="nav-btn">✏️ Resume Builder</a>
+        <a href="/jd-resume" class="nav-btn">🤖 AI from JD</a>
+        <a href="/" class="nav-btn nav-btn-gold">+ New Analysis</a>
+    </div>
+</nav>
+
+<div class="tabs-bar">
+    <button class="tab-btn active" onclick="showTab('overview',this)">📊 Overview</button>
+    <button class="tab-btn" onclick="showTab('skills',this)">🧠 Skills <span class="tab-count">{{ data.skills|length }}</span></button>
+    <button class="tab-btn" onclick="showTab('sections',this)">📋 Sections</button>
+    <button class="tab-btn" onclick="showTab('grammar',this)">✍️ Grammar <span class="tab-count">{{ data.grammar_issues|length }}</span></button>
+    <button class="tab-btn" onclick="showTab('jobmatch',this)">🎯 Job Match</button>
+    <button class="tab-btn" onclick="showTab('interview',this)">🎤 Interview Qs <span class="tab-count">{{ data.interview_questions|length }}</span></button>
+    <button class="tab-btn" onclick="showTab('suggestions',this)">💡 Suggestions</button>
+</div>
+
+<div class="page">
+
+    <!-- OVERVIEW -->
+    <div class="tab-panel active" id="tab-overview">
+        <div class="overview-grid">
+            <div>
+                <div class="score-card">
+                    <div class="score-lbl">ATS Score</div>
+                    <div class="score-ring-wrap">
+                        <svg class="score-ring-svg" viewBox="0 0 140 140">
+                            <circle class="ring-bg" cx="70" cy="70" r="60"/>
+                            <circle class="ring-fill" id="ringFill" cx="70" cy="70" r="60"
+                                stroke="{{ '#34d399' if data.ats_score>=75 else ('#fbbf24' if data.ats_score>=50 else '#f87171') }}"/>
+                        </svg>
+                        <div class="score-inner">
+                            <div class="score-n" id="scoreNum" style="color:{{ '#34d399' if data.ats_score>=75 else ('#fbbf24' if data.ats_score>=50 else '#f87171') }}">0</div>
+                            <div class="score-d">/ 100</div>
+                        </div>
+                    </div>
+                    {% if data.ats_score >= 75 %}<div class="score-grade" style="color:#34d399">Excellent ✦</div><div class="score-desc">Well-optimised for ATS.</div>
+                    {% elif data.ats_score >= 50 %}<div class="score-grade" style="color:#fbbf24">Good ◆</div><div class="score-desc">A few improvements needed.</div>
+                    {% else %}<div class="score-grade" style="color:#f87171">Needs Work ▲</div><div class="score-desc">Follow the suggestions below.</div>{% endif %}
+                </div>
+                <div class="breakdown-card">
+                    <div class="bdwn-lbl">Score Breakdown</div>
+                    {% for cat, vals in data.ats_breakdown.items() %}
+                    <div class="bdwn-item">
+                        <div class="bdwn-row"><span style="font-size:.8rem">{{ cat }}</span><span style="font-size:.8rem;color:var(--text2)">{{ vals.score }}/{{ vals.max }}</span></div>
+                        <div class="pbar"><div class="pfill" data-w="{{ (vals.score/vals.max*100)|int }}" style="background:linear-gradient(90deg,{% set p=(vals.score/vals.max*100)|int %}{% if p>=75 %}#34d399,#059669{% elif p>=50 %}#fbbf24,#d97706{% else %}#f87171,#dc2626{% endif %})"></div></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <div class="stats-row">
+                    <div class="mini-stat"><div class="mini-num" style="color:var(--gold)">{{ data.skills|length }}</div><div class="mini-lbl">Skills Detected</div></div>
+                    <div class="mini-stat"><div class="mini-num" style="color:var(--success)">{{ data.sections.values()|list|select|list|length }}/{{ data.sections|length }}</div><div class="mini-lbl">Sections Found</div></div>
+                    <div class="mini-stat"><div class="mini-num" style="color:var(--cyan)">{{ data.interview_questions|length }}</div><div class="mini-lbl">Interview Qs</div></div>
+                </div>
+                <div class="card">
+                    <div class="card-top"><div class="card-ico" style="background:var(--gold-dim)">🧠</div><div class="card-ttl">Detected Skills</div><div class="card-badge">{{ data.skills|length }} found</div></div>
+                    <div class="skill-tags">{% for s in data.skills[:14] %}<span class="stag">{{ s }}</span>{% endfor %}{% if data.skills|length>14 %}<span class="stag" style="background:var(--surface2);color:var(--text2)">+{{ data.skills|length-14 }} more</span>{% endif %}</div>
+                </div>
+                <div class="card">
+                    <div class="card-top"><div class="card-ico" style="background:rgba(248,113,113,0.1)">💡</div><div class="card-ttl">Top Suggestions</div></div>
+                    {% for s in data.suggestions[:3] %}<div class="sug-item"><span style="font-size:1.1rem">{{ s.icon }}</span><span class="sug-txt">{{ s.text }}</span></div>{% endfor %}
+                    <button class="flt-btn" style="margin-top:8px" onclick="showTab('suggestions',null)">View all →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SKILLS -->
+    <div class="tab-panel" id="tab-skills">
+        <div class="card">
+            <div class="card-top"><div class="card-ico" style="background:var(--gold-dim)">🧠</div><div class="card-ttl">All Detected Skills</div><div class="card-badge">{{ data.skills|length }} found</div></div>
+            {% if data.skills %}<div class="skill-tags">{% for s in data.skills %}<span class="stag">{{ s }}</span>{% endfor %}</div>
+            {% else %}<p style="color:var(--text2);font-size:.88rem">No skills detected. Add a dedicated Skills section.</p>{% endif %}
+        </div>
+    </div>
+
+    <!-- SECTIONS -->
+    <div class="tab-panel" id="tab-sections">
+        <div class="card">
+            <div class="card-top"><div class="card-ico" style="background:rgba(56,189,248,0.1)">📋</div><div class="card-ttl">Resume Sections</div><div class="card-badge">{{ data.sections.values()|list|select|list|length }} / {{ data.sections|length }}</div></div>
+            <div class="sec-grid">
+                {% set icons={'Education':'🎓','Experience':'💼','Skills':'⚡','Projects':'🚀','Certifications':'🏆','Summary':'📝','Achievements':'⭐','Contact':'📞'} %}
+                {% for section, found in data.sections.items() %}
+                <div class="sec-item {{ 'found' if found else 'missing' }}">
+                    <div class="sec-ico">{{ icons.get(section,'📄') }}</div>
+                    <div class="sec-nm">{{ section }}</div>
+                    <div class="sec-st">{{ '✓ Found' if found else '✗ Missing' }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- GRAMMAR -->
+    <div class="tab-panel" id="tab-grammar">
+        <div class="card">
+            <div class="card-top"><div class="card-ico" style="background:rgba(251,191,36,0.1)">✍️</div><div class="card-ttl">Grammar Analysis</div><div class="card-badge">{{ data.grammar_issues|length }} issues</div></div>
+            {% if data.grammar_issues %}{% for i in data.grammar_issues %}
+            <div class="gram-item">
+                <div class="gram-err">"{{ i.error }}"</div>
+                <div style="font-size:.72rem;color:var(--text2);margin:5px 0">Suggested fix:</div>
+                <div class="gram-fix">"{{ i.suggestion }}"</div>
+                <div class="gram-rule">Rule: {{ i.rule }}</div>
+            </div>{% endfor %}
+            {% else %}<div class="no-issues"><span style="font-size:1.4rem">✅</span><div><div style="font-weight:600;margin-bottom:3px">No grammar issues found!</div><div style="font-size:.8rem;color:var(--text2)">Your resume reads professionally.</div></div></div>{% endif %}
+        </div>
+    </div>
+
+    <!-- JOB MATCH -->
+    <div class="tab-panel" id="tab-jobmatch">
+        <div class="card">
+            <div class="card-top"><div class="card-ico" style="background:rgba(52,211,153,0.1)">🎯</div><div class="card-ttl">Job Description Matcher</div></div>
+            <textarea class="jd-area" id="jdText" placeholder="Paste the job description here…&#10;&#10;Example: We are looking for a Python Developer with Flask, AWS, and PostgreSQL experience…"></textarea>
+            <button class="btn-gold-sm" id="btnMatch" onclick="matchJob()">Check Match Score</button>
+            <div class="match-result" id="matchResult">
+                <div class="match-big" id="matchBig">—</div>
+                <div class="match-lbl">Resume match with job description</div>
+                <div class="mbar-wrap"><div class="mbar" id="mBar"></div></div>
+                <div class="mkw-title">Missing Keywords to Add</div>
+                <div class="mkw-wrap" id="missingKw"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- INTERVIEW -->
+    <div class="tab-panel" id="tab-interview">
+        <div class="card">
+            <div class="card-top"><div class="card-ico" style="background:rgba(56,189,248,0.1)">🎤</div><div class="card-ttl">Interview Questions</div><div class="card-badge">{{ data.interview_questions|length }} questions</div></div>
+            <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:20px;font-size:.83rem;color:var(--text2);display:flex;align-items:center;gap:10px">
+                <span style="font-size:1.2rem">📈</span>
+                Generated from your resume skills. Click any card to reveal the answer tip.
+            </div>
+            <div class="iq-filters">
+                <button class="flt-btn active" onclick="filterIQ('all',this)">All</button>
+                <button class="flt-btn" onclick="filterIQ('Easy',this)">🟢 Easy</button>
+                <button class="flt-btn" onclick="filterIQ('Medium',this)">🟡 Medium</button>
+                <button class="flt-btn" onclick="filterIQ('Hard',this)">🔴 Hard</button>
+                <button class="flt-btn" onclick="filterIQ('HR',this)">🤝 HR</button>
+                <button class="flt-btn" onclick="filterIQ('Behavioral',this)">💬 Behavioral</button>
+                <button class="flt-btn" onclick="filterIQ('Technical',this)">⚙️ Technical</button>
+            </div>
+            <div class="iq-list" id="iqList">
+                {% for q in data.interview_questions %}
+                <div class="iq-card" data-diff="{{ q.difficulty }}" data-cat="{{ q.get('category','Technical') }}" onclick="toggleIQ(this)">
+                    <div class="iq-row">
+                        <div class="iq-q">{{ q.q }}</div>
+                        <div class="iq-arr">▼</div>
+                    </div>
+                    <div class="iq-meta">
+                        <span class="iq-cat">{{ q.get('category','Technical') }}</span>
+                        <span class="iq-diff {{ q.difficulty }}">{{ q.difficulty }}</span>
+                    </div>
+                    <div class="iq-tip">{{ q.tip }}</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- SUGGESTIONS -->
+    <div class="tab-panel" id="tab-suggestions">
+        <div class="card">
+            <div class="card-top"><div class="card-ico" style="background:rgba(248,113,113,0.1)">💡</div><div class="card-ttl">Improvement Suggestions</div><div class="card-badge">{{ data.suggestions|length }} tips</div></div>
+            {% for s in data.suggestions %}<div class="sug-item"><span style="font-size:1.2rem">{{ s.icon }}</span><span class="sug-txt">{{ s.text }}</span></div>{% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<script>
+var RESUME_TEXT = {{ data.text | tojson }};
+
+function showTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.getElementById('tab-'+name).classList.add('active');
+    if (btn) btn.classList.add('active');
+}
+
+window.addEventListener('load', function() {
+    var score = {{ data.ats_score }};
+    var circ = 2 * Math.PI * 60;
+    var ring = document.getElementById('ringFill');
+    var numEl = document.getElementById('scoreNum');
+    setTimeout(function() {
+        ring.style.strokeDashoffset = circ - (score/100)*circ;
+        var cur=0, step=score/95;
+        var t = setInterval(function(){ cur=Math.min(cur+step,score); numEl.textContent=Math.round(cur); if(cur>=score) clearInterval(t); },16);
+    },300);
+    setTimeout(function(){
+        document.querySelectorAll('.pfill').forEach(function(b){ b.style.width=b.dataset.w+'%'; });
+    },600);
+});
+
+function matchJob() {
+    var jd = document.getElementById('jdText').value.trim();
+    if (!jd) { document.getElementById('jdText').focus(); return; }
+    var btn = document.getElementById('btnMatch');
+    btn.disabled=true; btn.textContent='Calculating…';
+    fetch('/match_job',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({resume_text:RESUME_TEXT,job_description:jd})})
+    .then(function(r){return r.json();})
+    .then(function(data){
+        var s=data.match_score;
+        var c = s>=60?'#34d399':(s>=35?'#fbbf24':'#f87171');
+        var bigEl=document.getElementById('matchBig'); bigEl.style.color=c; bigEl.textContent=s+'%';
+        var bar=document.getElementById('mBar'); bar.style.background='linear-gradient(90deg,'+c+','+c+'aa)';
+        document.getElementById('matchResult').classList.add('show');
+        setTimeout(function(){ bar.style.width=Math.min(s*1.5,100)+'%'; },100);
+        var mkEl=document.getElementById('missingKw'); mkEl.innerHTML='';
+        if(data.missing_keywords.length>0){data.missing_keywords.forEach(function(k){var sp=document.createElement('span');sp.className='mkw';sp.textContent=k;mkEl.appendChild(sp);});}
+        else{mkEl.innerHTML='<span style="color:var(--success);font-size:.83rem">Great match! No major keywords missing.</span>';}
+    })
+    .catch(function(){alert('Error. Try again.');})
+    .finally(function(){btn.disabled=false;btn.textContent='Check Match Score';});
+}
+
+function toggleIQ(card) {
+    var tip=card.querySelector('.iq-tip'), isOpen=tip.classList.contains('show');
+    tip.classList.toggle('show'); card.classList.toggle('open');
+}
+
+function filterIQ(f,btn) {
+    document.querySelectorAll('.flt-btn').forEach(function(b){b.classList.remove('active');}); btn.classList.add('active');
+    document.querySelectorAll('.iq-card').forEach(function(c){
+        var d=c.dataset.diff, cat=c.dataset.cat;
+        c.style.display = f==='all'?'block':(['Easy','Medium','Hard'].includes(f)?d===f?'block':'none':cat===f?'block':'none');
+    });
+}
+</script>
+</body>
+</html>
