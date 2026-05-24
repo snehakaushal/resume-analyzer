@@ -1,6 +1,6 @@
 https://resume-analyzer-3-0vya.onrender.com/
 
-Python, Flask, NLP, Machine Learning, HTML, CSS, JavaScript
+Tech : Python, Flask, NLP, Machine Learning, HTML, CSS, JavaScript
 
 Developed an AI-powered Resume Analyzer web application that evaluates resumes for ATS compatibility and provides intelligent improvement suggestions.
 Built resume parsing functionality using Python and PyPDF2 to extract resume content from uploaded PDF files.
